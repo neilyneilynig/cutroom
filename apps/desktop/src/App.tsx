@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import {
   ingestFile,
   MAX_TRACKS,
@@ -72,6 +73,19 @@ export function App() {
   }, [projectPath, dirty]);
 
   useEffect(() => setLoudness(null), [project]);
+
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
+  useEffect(() => {
+    const off = getCurrentWindow().onCloseRequested(async (event) => {
+      if (dirtyRef.current && !(await ask("Quit without saving your changes?", { title: "Cutroom", kind: "warning" }))) {
+        event.preventDefault();
+      }
+    });
+    return () => {
+      off.then((unlisten) => unlisten());
+    };
+  }, []);
 
   const stopPlayback = useCallback(() => {
     setPlaying(false);
@@ -148,7 +162,7 @@ export function App() {
   }
 
   async function openProject() {
-    if (dirty && !window.confirm("Discard unsaved changes?")) return;
+    if (dirty && !(await ask("Discard unsaved changes?", { title: "Cutroom", kind: "warning" }))) return;
     const picked = await open({ filters: [{ name: "Cutroom project", extensions: [PROJECT_EXT] }] });
     if (!picked || Array.isArray(picked)) return;
     stopPlayback();
