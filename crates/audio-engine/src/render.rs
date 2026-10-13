@@ -1,3 +1,4 @@
+use crate::loudness::{measure_loudness, normalize_gain_db, Loudness};
 use crate::session::{Clip, Project};
 use crate::wav::{read_wav, write_pcm16};
 use crate::EngineError;
@@ -5,6 +6,8 @@ use std::collections::HashMap;
 use std::path::Path;
 
 const OUT_CHANNELS: usize = 2;
+pub const PODCAST_LUFS: f64 = -16.0;
+pub const TRUE_PEAK_DBTP: f64 = -1.0;
 
 fn frame(sec: f64, sr: u32) -> i64 {
     (sec * sr as f64).round() as i64
@@ -102,13 +105,76 @@ pub fn render_mix(project: &Project) -> Result<Vec<f32>, EngineError> {
     Ok(out)
 }
 
-pub fn render_wav(project: &Project, dest: &Path) -> Result<(), EngineError> {
+fn refuse_source_overwrite(project: &Project, dest: &Path) -> Result<(), EngineError> {
     let dest_abs = std::path::absolute(dest)?;
     for file in &project.files {
         if std::path::absolute(&file.path)? == dest_abs {
             return Err(EngineError::WouldOverwriteSource(file.path.clone()));
         }
     }
+    Ok(())
+}
+
+pub fn render_wav(project: &Project, dest: &Path) -> Result<(), EngineError> {
+    refuse_source_overwrite(project, dest)?;
     let mix = render_mix(project)?;
     write_pcm16(dest, project.sample_rate, OUT_CHANNELS as u16, &mix)
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+pub enum ExportFormat {
+    Wav,
+    Mp3 { kbps: u32 },
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportOptions {
+    pub format: ExportFormat,
+    pub normalize: bool,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportReport {
+    pub before: Loudness,
+    pub gain_db: f64,
+}
+
+// Renders the EDL, optionally normalizes to the podcast target, and writes WAV or MP3.
+pub fn export(project: &Project, dest: &Path, options: &ExportOptions) -> Result<ExportReport, EngineError> {
+    refuse_source_overwrite(project, dest)?;
+    let mut mix = render_mix(project)?;
+    let before = measure_loudness(&mix, OUT_CHANNELS as u16, project.sample_rate)?;
+    let gain_db = if options.normalize { normalize_gain_db(&before, PODCAST_LUFS, TRUE_PEAK_DBTP) } else { 0.0 };
+    if gain_db != 0.0 {
+        let gain = 10f32.powf(gain_db as f32 / 20.0);
+        mix.iter_mut().for_each(|s| *s *= gain);
+    }
+    match options.format {
+        ExportFormat::Wav => write_pcm16(dest, project.sample_rate, OUT_CHANNELS as u16, &mix)?,
+        ExportFormat::Mp3 { kbps } => {
+            let temp = dest.with_extension("mp3.tmp.wav");
+            write_pcm16(&temp, project.sample_rate, OUT_CHANNELS as u16, &mix)?;
+            let result = encode_mp3(&temp, dest, kbps);
+            let _ = std::fs::remove_file(&temp);
+            result?;
+        }
+    }
+    Ok(ExportReport { before, gain_db })
+}
+
+fn encode_mp3(wav: &Path, dest: &Path, kbps: u32) -> Result<(), EngineError> {
+    let output = std::process::Command::new("ffmpeg")
+        .args(["-y", "-hide_banner", "-loglevel", "error", "-i"])
+        .arg(wav)
+        .args(["-codec:a", "libmp3lame", "-b:a", &format!("{kbps}k")])
+        .arg(dest)
+        .output()
+        .map_err(|e| EngineError::Encoder(format!("could not run ffmpeg: {e}")))?;
+    if !output.status.success() {
+        return Err(EngineError::Encoder(String::from_utf8_lossy(&output.stderr).trim().to_string()));
+    }
+    Ok(())
 }
