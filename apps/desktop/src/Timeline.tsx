@@ -14,6 +14,8 @@ type Props = {
   scrollSec: number;
   playheadSec: number;
   selection: Selection | null;
+  selectedClipId: string | null;
+  onSelectClip: (clipId: string | null) => void;
   onSeek: (sec: number) => void;
   onSelect: (selection: Selection | null) => void;
   onScroll: (sec: number) => void;
@@ -62,7 +64,7 @@ function setupCanvas(canvas: HTMLCanvasElement, width: number, height: number) {
 }
 
 export function Timeline(props: Props) {
-  const { project, peaks, pxPerSec, scrollSec, playheadSec, selection } = props;
+  const { project, peaks, pxPerSec, scrollSec, playheadSec, selection, selectedClipId } = props;
   const wrapRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -116,8 +118,10 @@ export function Timeline(props: Props) {
         ctx.globalAlpha = audible ? 1 : 0.35;
         ctx.fillStyle = cssVar("--clip");
         ctx.fillRect(x0, clipTop, x1 - x0, clipH);
-        ctx.strokeStyle = cssVar("--clip-edge");
+        ctx.strokeStyle = cssVar(clip.id === selectedClipId ? "--accent" : "--clip-edge");
+        ctx.lineWidth = clip.id === selectedClipId ? 2 : 1;
         ctx.strokeRect(Math.round(x0) + 0.5, clipTop + 0.5, Math.max(1, x1 - x0 - 1), clipH - 1);
+        ctx.lineWidth = 1;
 
         const filePeaks = peaks[clip.fileId];
         if (filePeaks) {
@@ -140,10 +144,33 @@ export function Timeline(props: Props) {
             ctx.fillRect(x, mid - hi * amp, 1, Math.max(1, (hi - lo) * amp));
           }
         }
+
+        const fadeIn = clip.fadeInSec * pxPerSec;
+        const fadeOut = clip.fadeOutSec * pxPerSec;
+        ctx.strokeStyle = cssVar("--fade");
+        ctx.lineWidth = 1.5;
+        if (fadeIn > 1) {
+          ctx.beginPath();
+          ctx.moveTo(x0, clipTop + clipH);
+          ctx.lineTo(x0 + fadeIn, clipTop);
+          ctx.stroke();
+        }
+        if (fadeOut > 1) {
+          ctx.beginPath();
+          ctx.moveTo(x1 - fadeOut, clipTop);
+          ctx.lineTo(x1, clipTop + clipH);
+          ctx.stroke();
+        }
+        ctx.lineWidth = 1;
+        if (clip.gainDb !== 0 && x1 - x0 > 48) {
+          ctx.fillStyle = cssVar("--text");
+          ctx.font = "11px ui-monospace, monospace";
+          ctx.fillText(`${clip.gainDb > 0 ? "+" : ""}${clip.gainDb.toFixed(1)} dB`, Math.max(x0, 0) + 6, clipTop + 14);
+        }
         ctx.globalAlpha = 1;
       }
     });
-  }, [project, peaks, pxPerSec, scrollSec, width, height]);
+  }, [project, peaks, pxPerSec, scrollSec, width, height, selectedClipId]);
 
   // Selection and playhead: cheap overlay redrawn every animation frame while playing.
   useEffect(() => {
@@ -185,6 +212,12 @@ export function Timeline(props: Props) {
         (e.target as Element).setPointerCapture(e.pointerId);
         const sec = secOf(localX(e));
         dragRef.current = { startSec: sec, moved: false };
+        const lane = Math.floor((e.clientY - wrapRef.current!.getBoundingClientRect().top - RULER_PX) / LANE_PX);
+        const track = tracks[lane];
+        const hit = track
+          ? project.clips.find((c) => c.trackId === track.id && sec >= c.timelineStartSec && sec < clipEnd(c))
+          : undefined;
+        props.onSelectClip(hit?.id ?? null);
         props.onSeek(sec);
         props.onSelect(null);
       }}
