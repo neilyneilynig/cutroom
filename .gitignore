@@ -4,6 +4,15 @@ target/
 .env
 .env.*
 *.wav
+!crates/audio-engine/tests/fixtures/.gitkeep
 *.aiff
 *.mp3
 .DS_Store
+.idea/
+.vscode/
+apps/desktop/src-tauri/gen/
+*.cutroom/
+media/
+peaks/
+exports/
+/.superpowers/
