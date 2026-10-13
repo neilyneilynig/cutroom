@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "test": "pnpm --filter @cutroom/session-model test && cargo test -p audio-engine",
+    "test": "pnpm --filter @cutroom/session-model test && pnpm --filter @cutroom/desktop test && cargo test -p audio-engine",
     "desktop:dev": "pnpm --filter @cutroom/desktop tauri dev",
     "desktop:build": "pnpm --filter @cutroom/desktop tauri build"
   }

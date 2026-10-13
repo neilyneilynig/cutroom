@@ -1,0 +1,224 @@
+:root {
+  --bg: #15161a;
+  --panel: #1d1f24;
+  --lane: #18191d;
+  --ruler: #202227;
+  --grid: #2a2d34;
+  --border: #2e3138;
+  --text: #e6e7ea;
+  --muted-text: #8b8f99;
+  --accent: #ff6a3d;
+  --clip: #23313a;
+  --clip-edge: #3d5a6b;
+  --wave: #7fc4e3;
+  --selection: rgba(255, 106, 61, 0.18);
+  --mute: #d9a514;
+  --solo: #3ec27a;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: #2a2d34;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #343841;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a0d07;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #ff825c;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.logo {
+  color: var(--accent);
+}
+
+.group {
+  display: flex;
+  gap: 6px;
+}
+
+.workspace {
+  overflow: auto;
+  min-height: 0;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+}
+
+.track-heads {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+}
+
+.track-head {
+  border-bottom: 1px solid var(--grid);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.track-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.toggle {
+  width: 30px;
+  padding: 3px 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.toggle.on.mute {
+  background: var(--mute);
+  border-color: var(--mute);
+  color: #1a1400;
+}
+
+.toggle.on.solo {
+  background: var(--solo);
+  border-color: var(--solo);
+  color: #04170c;
+}
+
+.timeline {
+  position: relative;
+  cursor: text;
+  overflow: hidden;
+}
+
+.timeline canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.empty {
+  max-width: 460px;
+  margin: 14vh auto 0;
+  text-align: center;
+  color: var(--muted-text);
+}
+
+.empty h1 {
+  color: var(--text);
+  font-size: 22px;
+}
+
+.empty .hint {
+  font-size: 12px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+
+.play {
+  min-width: 86px;
+}
+
+.clock {
+  font: 600 15px ui-monospace, "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--muted-text);
+  font-weight: 400;
+}
+
+.keys {
+  font-size: 12px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.busy {
+  color: var(--accent);
+}
+
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 56px;
+  max-width: 480px;
+  background: #3a1d17;
+  border: 1px solid #7a3324;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
