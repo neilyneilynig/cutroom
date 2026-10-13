@@ -55,3 +55,14 @@ describe("transcript", () => {
     expect(deleteWords(project, ["nope"])).toBe(project);
   });
 });
+
+describe("timelineWords", () => {
+  it("gives each visible word its timeline span in edit order", async () => {
+    const { timelineWords } = await import("./transcript");
+    const next = deleteWords(project, ["w2"]);
+    expect(timelineWords(next).map((w) => [w.word.id, w.startSec, w.endSec])).toEqual([
+      ["w1", 0, 1],
+      ["w3", 1, 2],
+    ]);
+  });
+});

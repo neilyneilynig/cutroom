@@ -1,4 +1,14 @@
-import { clipEnd, emptyProject, removeLinkedRange, type Project } from "@cutroom/session-model";
+import {
+  clipEnd,
+  emptyProject,
+  removeLinkedRange,
+  setTrackWords,
+  splitClip,
+  updateClip,
+  type ClipPatch,
+  type Project,
+  type Word,
+} from "@cutroom/session-model";
 
 const HISTORY_LIMIT = 200;
 
@@ -10,6 +20,10 @@ export type EditorState = {
 
 export type EditorAction =
   | { type: "replace"; project: Project }
+  | { type: "open"; project: Project }
+  | { type: "updateClip"; clipId: string; patch: ClipPatch }
+  | { type: "splitClip"; clipId: string; atSec: number }
+  | { type: "setTrackWords"; trackId: string; words: Omit<Word, "id">[] }
   | { type: "cut"; t0: number; t1: number }
   | { type: "toggleMute"; trackId: string }
   | { type: "toggleSolo"; trackId: string }
@@ -39,6 +53,16 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
   switch (action.type) {
     case "replace":
       return commit(state, action.project);
+    case "open":
+      return { project: action.project, past: [], future: [] };
+    case "updateClip":
+      return commit(state, updateClip(state.project, action.clipId, action.patch));
+    case "splitClip": {
+      const next = splitClip(state.project, action.clipId, action.atSec);
+      return next === state.project ? state : commit(state, next);
+    }
+    case "setTrackWords":
+      return commit(state, setTrackWords(state.project, action.trackId, action.words));
     case "cut":
       if (action.t1 <= action.t0) return state;
       return commit(state, removeLinkedRange(state.project, action.t0, action.t1));

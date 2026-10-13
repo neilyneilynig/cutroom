@@ -44,3 +44,12 @@ export function deleteWords(project: Project, wordIds: string[]): Project {
   }
   return removeLinkedRange(project, t0, t1);
 }
+
+export type TimedWord = { word: Word; startSec: number; endSec: number };
+
+export function timelineWords(project: Project): TimedWord[] {
+  return visibleWords(project).map((word) => {
+    const startSec = wordTimelineStart(project, word)!;
+    return { word, startSec, endSec: startSec + (word.sourceEndSec - word.sourceStartSec) };
+  });
+}
