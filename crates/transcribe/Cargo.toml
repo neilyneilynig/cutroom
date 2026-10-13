@@ -1,0 +1,11 @@
+[package]
+name = "transcribe"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+audio-engine = { path = "../audio-engine" }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+whisper-rs = "0.16"
