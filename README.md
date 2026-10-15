@@ -4,6 +4,8 @@ Local-first podcast post-production for professional editors.
 
 Desktop owns the cut. Media stays on disk. Cloud (later) holds review mixes only.
 
+**Download:** [Linux AppImage and .deb](https://github.com/neilyneilynig/cutroom/releases/latest). Build from source below.
+
 ```bash
 pnpm install         # building whisper.cpp needs cmake and a C++ compiler
 pnpm test            # Vitest (session-model, desktop) + cargo (audio-engine, transcribe)
